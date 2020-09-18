@@ -13,16 +13,22 @@
  * Do not edit or add to this file if you wish to upgrade this extension to newer
  * version in the future.
  *
- * @category    Mageplaza
- * @package     Mageplaza_SocialLogin
- * @copyright   Copyright (c) Mageplaza (http://www.mageplaza.com/)
- * @license     https://www.mageplaza.com/LICENSE.txt
+ * @category  Mageplaza
+ * @package   Mageplaza_SocialLogin
+ * @copyright Copyright (c) Mageplaza (https://www.mageplaza.com/)
+ * @license   https://www.mageplaza.com/LICENSE.txt
  */
 
 namespace Mageplaza\SocialLogin\Helper;
 
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\Store;
 use Mageplaza\SocialLogin\Helper\Data as HelperData;
+use Mageplaza\SocialLogin\Model\Providers\Amazon;
+use Mageplaza\SocialLogin\Model\Providers\GitHub;
+use Mageplaza\SocialLogin\Model\Providers\Instagram;
+use Mageplaza\SocialLogin\Model\Providers\Vkontakte;
 
 /**
  * Class Social
@@ -38,6 +44,7 @@ class Social extends HelperData
 
     /**
      * @param null $type
+     *
      * @return null
      */
     public function setType($type)
@@ -57,35 +64,39 @@ class Social extends HelperData
      */
     public function getSocialTypes()
     {
-        $socialTypes = $this->_getSocialTypes();
-        uksort($socialTypes, function ($a, $b) {
-            $sortA = $this->getConfigValue("sociallogin/{$a}/sort_order") ?: 0;
-            $sortB = $this->getConfigValue("sociallogin/{$b}/sort_order") ?: 0;
-            if ($sortA == $sortB) {
-                return 0;
-            }
+        $socialTypes = $this->getSocialTypesArray();
+        uksort(
+            $socialTypes,
+            function ($a, $b) {
+                $sortA = $this->getConfigValue("sociallogin/{$a}/sort_order") ?: 0;
+                $sortB = $this->getConfigValue("sociallogin/{$b}/sort_order") ?: 0;
+                if ($sortA === $sortB) {
+                    return 0;
+                }
 
-            return ($sortA < $sortB) ? -1 : 1;
-        });
+                return ($sortA < $sortB) ? -1 : 1;
+            }
+        );
 
         return $socialTypes;
     }
 
     /**
      * @param $type
+     *
      * @return array
      */
     public function getSocialConfig($type)
     {
         $apiData = [
-            'Facebook'  => ["trustForwarded" => false, 'scope' => 'email, public_profile'],
-            'Twitter'   => ["includeEmail" => true],
-            'LinkedIn'  => ["fields" => ['id', 'first-name', 'last-name', 'email-address']],
-            'Vkontakte' => ['wrapper' => ['class' => '\Mageplaza\SocialLogin\Model\Providers\Vkontakte']],
-            'Instagram' => ['wrapper' => ['class' => '\Mageplaza\SocialLogin\Model\Providers\Instagram']],
-            'Github'    => ['wrapper' => ['class' => '\Mageplaza\SocialLogin\Model\Providers\GitHub']],
-            'Amazon'    => ['wrapper' => ['class' => '\Mageplaza\SocialLogin\Model\Providers\Amazon']],
-            'Google'    => ['scope' => 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/plus.profile.emails.read']
+            'Facebook'  => ['trustForwarded' => false, 'scope' => 'email, public_profile'],
+            'Twitter'   => ['includeEmail' => true],
+            'LinkedIn'  => ['fields' => ['id', 'first-name', 'last-name', 'email-address']],
+            'Vkontakte' => ['wrapper' => ['class' => Vkontakte::class]],
+            'Instagram' => ['wrapper' => ['class' => Instagram::class]],
+            'Github'    => ['wrapper' => ['class' => GitHub::class]],
+            'Amazon'    => ['wrapper' => ['class' => Amazon::class]],
+            'Google'    => ['scope' => 'profile email']
         ];
 
         if ($type && array_key_exists($type, $apiData)) {
@@ -105,6 +116,7 @@ class Social extends HelperData
 
     /**
      * @param null $storeId
+     *
      * @return mixed
      */
     public function isEnabled($storeId = null)
@@ -114,6 +126,17 @@ class Social extends HelperData
 
     /**
      * @param null $storeId
+     *
+     * @return array|mixed
+     */
+    public function isSignInAsAdmin($storeId = null)
+    {
+        return $this->getConfigValue("sociallogin/{$this->_type}/admin", $storeId);
+    }
+
+    /**
+     * @param null $storeId
+     *
      * @return mixed
      */
     public function getAppId($storeId = null)
@@ -125,6 +148,7 @@ class Social extends HelperData
 
     /**
      * @param null $storeId
+     *
      * @return mixed
      */
     public function getAppSecret($storeId = null)
@@ -136,8 +160,9 @@ class Social extends HelperData
 
     /**
      * @param $type
+     *
      * @return mixed|string
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws LocalizedException
      */
     public function getAuthUrl($type)
     {
@@ -149,50 +174,48 @@ class Social extends HelperData
                 $param = 'hauth_done=' . $type;
                 break;
             case 'Live':
-                $param = null;
+                $param = 'live.php';
                 break;
             case 'Yahoo':
-                return $this->getDomainUrl();
-                break;
+                return $authUrl;
+            case 'Twitter':
+                return $authUrl;
             default:
                 $param = 'hauth.done=' . $type;
+        }
+        if ($type === 'Live') {
+            return $authUrl . $param;
         }
 
         return $authUrl . ($param ? (strpos($authUrl, '?') ? '&' : '?') . $param : '');
     }
 
     /**
-     * @return mixed
-     * @throws \Magento\Framework\Exception\LocalizedException
-     */
-    public function getDomainUrl()
-    {
-        $url   = $this->getBaseAuthUrl();
-        $parse = parse_url($url);
-
-        return $parse['host'];
-    }
-
-    /**
      * @return string
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws LocalizedException
      */
-    public function getBaseAuthUrl()
+    public function getBaseAuthUrl($area = null)
     {
         $storeId = $this->getScopeUrl();
-        /** @var \Magento\Store\Model\Store $store */
+
+        /**
+         * @var Store $store
+         */
         $store = $this->storeManager->getStore($storeId);
 
-        return $this->_getUrl('sociallogin/social/callback', [
-            '_nosid'  => true,
-            '_scope'  => $storeId,
-            '_secure' => $store->isUrlSecure()
-        ]);
+        return $this->_getUrl(
+            'sociallogin/social/callback',
+            [
+                '_nosid'  => true,
+                '_scope'  => $storeId,
+                '_secure' => true
+            ]
+        );
     }
 
     /**
      * @return int
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws LocalizedException
      */
     protected function getScopeUrl()
     {
@@ -208,7 +231,7 @@ class Social extends HelperData
     /**
      * @return array
      */
-    public function _getSocialTypes()
+    public function getSocialTypesArray()
     {
         return [
             'facebook'   => 'Facebook',
@@ -220,7 +243,8 @@ class Social extends HelperData
             'foursquare' => 'Foursquare',
             'vkontakte'  => 'Vkontakte',
             'instagram'  => 'Instagram',
-            'github'     => 'Github'
+            'github'     => 'Github',
+            'live'       => 'Live'
         ];
     }
 }

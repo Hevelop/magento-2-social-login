@@ -13,10 +13,10 @@
  * Do not edit or add to this file if you wish to upgrade this extension to newer
  * version in the future.
  *
- * @category    Mageplaza
- * @package     Mageplaza_SocialLogin
- * @copyright   Copyright (c) Mageplaza (http://www.mageplaza.com/)
- * @license     https://www.mageplaza.com/LICENSE.txt
+ * @category  Mageplaza
+ * @package   Mageplaza_SocialLogin
+ * @copyright Copyright (c) Mageplaza (https://www.mageplaza.com/)
+ * @license   https://www.mageplaza.com/LICENSE.txt
  */
 
 namespace Mageplaza\SocialLogin\Block\Popup;
@@ -34,21 +34,20 @@ use Mageplaza\SocialLogin\Model\System\Config\Source\Position;
 class Social extends Template
 {
     /**
-     * @type \Mageplaza\SocialLogin\Helper\Social
+     * @type SocialHelper
      */
     protected $socialHelper;
 
     /**
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Mageplaza\SocialLogin\Helper\Social $socialHelper
+     * @param Context $context
+     * @param SocialHelper $socialHelper
      * @param array $data
      */
     public function __construct(
         Context $context,
         SocialHelper $socialHelper,
         array $data = []
-    )
-    {
+    ) {
         $this->socialHelper = $socialHelper;
 
         parent::__construct($context, $data);
@@ -76,6 +75,7 @@ class Social extends Template
 
     /**
      * @param $key
+     *
      * @return string
      */
     public function getBtnKey($key)
@@ -108,6 +108,7 @@ class Social extends Template
 
     /**
      * @param null $position
+     *
      * @return bool
      */
     public function canShow($position = null)
@@ -116,7 +117,7 @@ class Social extends Template
         $displayConfig = explode(',', $displayConfig);
 
         if (!$position) {
-            $position = ($this->getRequest()->getFullActionName() == 'customer_account_login') ?
+            $position = $this->getRequest()->getFullActionName() === 'customer_account_login' ?
                 Position::PAGE_LOGIN :
                 Position::PAGE_CREATE;
         }
@@ -125,8 +126,9 @@ class Social extends Template
     }
 
     /**
-     * @param       $socialKey
+     * @param $socialKey
      * @param array $params
+     *
      * @return string
      */
     public function getLoginUrl($socialKey, $params = [])

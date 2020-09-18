@@ -7,17 +7,22 @@
 
 namespace Mageplaza\SocialLogin\Model\Providers;
 
+use Exception;
+use Hybrid_Provider_Model_OAuth2;
+use Hybrid_User_Profile;
+
 /**
  * Hybrid_Providers_Instagram (By Sebastian Lasse - https://github.com/sebilasse)
  */
-class Instagram extends \Hybrid_Provider_Model_OAuth2
+class Instagram extends Hybrid_Provider_Model_OAuth2
 {
     // default permissions
     public $scope = "basic";
 
     /**
      * IDp wrappers initializer
-     * @throws \Exception
+     *
+     * @throws Exception
      */
     function initialize()
     {
@@ -45,8 +50,9 @@ class Instagram extends \Hybrid_Provider_Model_OAuth2
 
     /**
      * load the user profile from the IDp api client
-     * @return \Hybrid_User_Profile
-     * @throws \Exception
+     *
+     * @return Hybrid_User_Profile
+     * @throws Exception
      */
     function getUserProfile()
     {
@@ -63,7 +69,7 @@ class Instagram extends \Hybrid_Provider_Model_OAuth2
         $url  = "users/self/" . (strpos("users/self/", '?') ? '&' : '?') . $urlEncodedParams;
         $data = $this->api->api($url);
         if ($data->meta->code != 200) {
-            throw new \Exception("User profile request failed! {$this->providerId} returned an invalid response.", 6);
+            throw new Exception("User profile request failed! {$this->providerId} returned an invalid response.", 6);
         }
 
         $this->user->profile->identifier  = $data->data->id;

@@ -13,10 +13,10 @@
  * Do not edit or add to this file if you wish to upgrade this extension to newer
  * version in the future.
  *
- * @category    Mageplaza
- * @package     Mageplaza_SocialLogin
- * @copyright   Copyright (c) Mageplaza (http://www.mageplaza.com/)
- * @license     https://www.mageplaza.com/LICENSE.txt
+ * @category  Mageplaza
+ * @package   Mageplaza_SocialLogin
+ * @copyright Copyright (c) Mageplaza (https://www.mageplaza.com/)
+ * @license   https://www.mageplaza.com/LICENSE.txt
  */
 
 namespace Mageplaza\SocialLogin\Block;
@@ -33,25 +33,25 @@ use Mageplaza\SocialLogin\Helper\Data as DataHelper;
 class Css extends Template
 {
     /**
-     * @type \Mageplaza\SocialLogin\Helper\Data
+     * @type DataHelper
      */
     protected $_helper;
 
     /**
      * Css constructor.
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Mageplaza\SocialLogin\Helper\Data $helper
+     *
+     * @param Context $context
+     * @param DataHelper $helper
      * @param array $data
      */
     public function __construct(
         Context $context,
         DataHelper $helper,
         array $data = []
-    )
-    {
-        parent::__construct($context, $data);
-
+    ) {
         $this->_helper = $helper;
+
+        parent::__construct($context, $data);
     }
 
     /**
@@ -60,12 +60,16 @@ class Css extends Template
     protected function _prepareLayout()
     {
         if ($this->_helper->isEnabled()) {
-            if ($this->_helper->getConfigGeneral('popup_login')) {
+            if ($this->_helper->getPopupLogin()) {
                 $this->pageConfig->addPageAsset('Mageplaza_SocialLogin::css/style.css');
                 $this->pageConfig->addPageAsset('Mageplaza_Core::css/grid-mageplaza.css');
                 $this->pageConfig->addPageAsset('Mageplaza_Core::css/font-awesome.min.css');
                 $this->pageConfig->addPageAsset('Mageplaza_Core::css/magnific-popup.css');
-            } else if (in_array($this->_request->getFullActionName(), ['customer_account_login', 'customer_account_create'])) {
+            } elseif (in_array(
+                $this->_request->getFullActionName(),
+                ['customer_account_login', 'customer_account_create', 'customer_account_index']
+            )
+            ) {
                 $this->pageConfig->addPageAsset('Mageplaza_SocialLogin::css/style.css');
                 $this->pageConfig->addPageAsset('Mageplaza_Core::css/font-awesome.min.css');
             }
@@ -75,7 +79,7 @@ class Css extends Template
     }
 
     /**
-     * @return \Mageplaza\SocialLogin\Helper\Data
+     * @return DataHelper
      */
     public function helper()
     {

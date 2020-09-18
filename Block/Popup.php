@@ -13,10 +13,10 @@
  * Do not edit or add to this file if you wish to upgrade this extension to newer
  * version in the future.
  *
- * @category    Mageplaza
- * @package     Mageplaza_SocialLogin
- * @copyright   Copyright (c) Mageplaza (http://www.mageplaza.com/)
- * @license     https://www.mageplaza.com/LICENSE.txt
+ * @category  Mageplaza
+ * @package   Mageplaza_SocialLogin
+ * @copyright Copyright (c) Mageplaza (https://www.mageplaza.com/)
+ * @license   https://www.mageplaza.com/LICENSE.txt
  */
 
 namespace Mageplaza\SocialLogin\Block;
@@ -34,19 +34,19 @@ use Mageplaza\SocialLogin\Helper\Data as HelperData;
 class Popup extends Template
 {
     /**
-     * @type \Mageplaza\SocialLogin\Helper\Data
+     * @type HelperData
      */
     protected $helperData;
 
     /**
-     * @type \Magento\Customer\Model\Session
+     * @type CustomerSession
      */
     protected $customerSession;
 
     /**
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Mageplaza\SocialLogin\Helper\Data $helperData
-     * @param \Magento\Customer\Model\Session $customerSession
+     * @param Context $context
+     * @param HelperData $helperData
+     * @param CustomerSession $customerSession
      * @param array $data
      */
     public function __construct(
@@ -54,8 +54,7 @@ class Popup extends Template
         HelperData $helperData,
         CustomerSession $customerSession,
         array $data = []
-    )
-    {
+    ) {
         $this->helperData      = $helperData;
         $this->customerSession = $customerSession;
 
@@ -63,13 +62,15 @@ class Popup extends Template
     }
 
     /**
-     * Is enable popup
-     *
-     * @return bool
+     * @return bool|mixed
      */
     public function isEnabled()
     {
-        return $this->helperData->isEnabled() && !$this->customerSession->isLoggedIn() && $this->helperData->getConfigGeneral('popup_login');
+        if ($this->helperData->isEnabled() && !$this->customerSession->isLoggedIn() && $this->helperData->getPopupLogin()) {
+            return $this->helperData->getPopupLogin();
+        }
+
+        return false;
     }
 
     /**
@@ -85,10 +86,21 @@ class Popup extends Template
             'formLoginUrl'  => $this->getFormLoginUrl(),
             'forgotFormUrl' => $this->getForgotFormUrl(),
             'createFormUrl' => $this->getCreateFormUrl(),
-            'fakeEmailUrl'  => $this->getFakeEmailUrl()
+            'fakeEmailUrl'  => $this->getFakeEmailUrl(),
+            'showFields'    => $this->getFieldCanShow(),
+            'popupLogin'    => $this->isEnabled(),
+            'actionName'    => $this->_request->getFullActionName()
         ];
 
         return json_encode($params);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFieldCanShow()
+    {
+        return $this->helperData->getFieldCanShow();
     }
 
     /**
@@ -153,5 +165,21 @@ class Popup extends Template
     public function isSecure()
     {
         return (bool) $this->helperData->isSecure();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStyleManagement()
+    {
+        return $this->helperData->getStyleManagement();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRequireMoreInfo()
+    {
+        return ($this->helperData->requiredMoreInfo() && !$this->isEnabled());
     }
 }
